@@ -4,8 +4,10 @@ pipeline {
     environment {
         IMAGE_NAME = 'yugshah0109/weather-app'
         IMAGE_TAG = '1.0'
-
         APP_PORT = '8081'
+
+        // Full paths because Jenkins Windows service cannot find them automatically
+        MAVEN_CMD = 'C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.11\\bin\\mvn.cmd'
 
         DOCKER_EXE = 'C:\\Users\\91986\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
     }
@@ -20,7 +22,9 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvn clean package -DskipTests'
+                bat '''
+                    "%MAVEN_CMD%" clean package -DskipTests
+                '''
             }
         }
 
@@ -88,7 +92,9 @@ pipeline {
 
         stage('Selenium Tests') {
             steps {
-                bat 'mvn test'
+                bat '''
+                    "%MAVEN_CMD%" test
+                '''
             }
         }
 
@@ -143,7 +149,6 @@ pipeline {
 
                 Write-Host "Pipeline execution completed."
             '''
-
         }
     }
 }
