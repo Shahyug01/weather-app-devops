@@ -1,12 +1,12 @@
+```groovy
 pipeline {
     agent any
 
     environment {
+        APP_PORT = '8081'
         IMAGE_NAME = 'yugshah0109/weather-app'
         IMAGE_TAG = '1.0'
-        APP_PORT = '8081'
 
-        // Full paths because Jenkins Windows service cannot find them automatically
         MAVEN_CMD = 'C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.11\\bin\\mvn.cmd'
 
         DOCKER_EXE = 'C:\\Users\\91986\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
@@ -39,7 +39,7 @@ pipeline {
                         throw "Application JAR not found."
                     }
 
-                    Write-Host "Starting application: $($jar.FullName)"
+                    Write-Host "Starting Weather App: $($jar.FullName)"
 
                     $process = Start-Process `
                         -FilePath "java" `
@@ -50,12 +50,9 @@ pipeline {
 
                     Set-Content -Path "app.pid" -Value $process.Id
 
-                    Write-Host "Application PID: $($process.Id)"
-
                     $ready = $false
 
                     for ($i = 0; $i -lt 30; $i++) {
-
                         Start-Sleep -Seconds 2
 
                         try {
@@ -70,18 +67,13 @@ pipeline {
                             }
                         }
                         catch {
-                            # Application is still starting
+                            # Wait while the application starts
                         }
                     }
 
                     if (-not $ready) {
-
-                        Write-Host "Application output:"
                         Get-Content "app.log" -ErrorAction SilentlyContinue
-
-                        Write-Host "Application error output:"
                         Get-Content "app-error.log" -ErrorAction SilentlyContinue
-
                         throw "Weather App did not start on port 8081."
                     }
 
@@ -105,41 +97,18 @@ pipeline {
                 '''
             }
         }
-
-        stage('Docker Push') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    bat '''
-                        echo %DOCKER_PASSWORD% | "%DOCKER_EXE%" login -u %DOCKER_USERNAME% --password-stdin
-
-                        "%DOCKER_EXE%" push %IMAGE_NAME%:%IMAGE_TAG%
-                    '''
-                }
-            }
-        }
     }
 
     post {
-
         always {
-
             powershell '''
                 if (Test-Path "app.pid") {
-
                     $appPid = Get-Content "app.pid"
 
                     Write-Host "Stopping Weather App process: $appPid"
 
                     try {
-                        Stop-Process `
-                            -Id $appPid `
-                            -Force `
+                        Stop-Process -Id $appPid -Force `
                             -ErrorAction SilentlyContinue
                     }
                     catch {
@@ -152,3 +121,4 @@ pipeline {
         }
     }
 }
+```
